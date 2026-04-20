@@ -1,1 +1,8 @@
 node_modules
+.next
+.open-next
+.wrangler
+.vercel
+.env
+.dev.vars
+.history

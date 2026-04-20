@@ -1,0 +1,16 @@
+name = "papago-next"
+main = ".open-next/worker.js"
+compatibility_date = "2026-04-20"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+[[kv_namespaces]]
+binding = "PAGES"
+id = "b81de7b823c94bb89de644d10a74ae49"
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "papago-next"

@@ -1,19 +1,26 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import homeDefault from "@/data/home-default";
 import { globalData } from "@/data/global";
 import HomeTemplate from "@/templates/home";
 
-export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 type NestedRecord = {
   __version?: number;
   [key: string]: unknown;
 };
 
+type KvEnv = {
+  PAGES: {
+    get(key: string): Promise<string | null>;
+  };
+};
+
 function isRecord(value: unknown): value is NestedRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function mergeDeep<T extends NestedRecord>(target: T, source: NestedRecord): T {
+function mergeDeep(target: NestedRecord, source: NestedRecord): NestedRecord {
   for (const key of Object.keys(source)) {
     const sourceValue = source[key];
     const targetValue = target[key];
@@ -29,7 +36,7 @@ function mergeDeep<T extends NestedRecord>(target: T, source: NestedRecord): T {
   return target;
 }
 
-function resolveHomeData<T extends NestedRecord>(data: T): T {
+function resolveHomeData(data: NestedRecord): NestedRecord {
   const servicesBlock = data.content;
 
   if (!isRecord(servicesBlock)) {
@@ -56,18 +63,11 @@ async function getOverrideData(): Promise<NestedRecord> {
   let overrideData: NestedRecord = {};
 
   try {
-    const res = await fetch("https://dev.papago.workers.dev/api/page", {
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      return overrideData;
-    }
-
-    overrideData = (await res.json()) as NestedRecord;
-  } catch (e) {
-    console.log("API failed, using default data");
-    overrideData = {};
+    const { env } = getCloudflareContext();
+    const data = await (env as KvEnv).PAGES.get("home");
+    overrideData = data ? (JSON.parse(data) as NestedRecord) : {};
+  } catch {
+    console.log("KV read failed");
   }
 
   return overrideData;
@@ -88,5 +88,5 @@ export default async function Page() {
 
   const finalData = resolveHomeData(mergedData);
 
-  return <HomeTemplate data={finalData} />;
+  return <HomeTemplate data={finalData as Parameters<typeof HomeTemplate>[0]["data"]} />;
 }
